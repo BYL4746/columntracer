@@ -211,7 +211,7 @@ class Column_tracer():
         
     def parameter_input(self):
         print('''
-              ====================== manually input ==========================
+              ======= manually input =======
               ''')
         print('''
               Please input:
