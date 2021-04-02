@@ -3,13 +3,14 @@
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from scipy import optimize
+import sys
 
 class Column_tracer():
     def __init__(self):
         self.input_dict = {'c0': self.C0_input, 'u': self.U_input, 
                            'd': self.D_input, 'l': self.L_input, 
                            'n': self.n_input}
-        
+        self.quit_list = ('e', 'q', 'exit', 'quit')
         # default parameters
         # solute influent concentration C0 in mg/L
         self.C0 = 100
@@ -41,6 +42,14 @@ class Column_tracer():
         L = 30 cm, length of column
         n = 100, number of terms to use in series solution
         '''
+        print('''
+              Default parameters for the demo are:
+              solute influent concentration C0 = 100 mg/L, 
+              flow velocity in column U = 10 cm/h, 
+              dispersion coeffiecient D = 100 cm2/h, 
+              length of column L = 30 cm, 
+              number of terms to use in series solution n = 100. 
+              ''')
         self.characteristic_equation()
         self.eigen_values()
         self.concentration_profile()
@@ -201,16 +210,20 @@ class Column_tracer():
         
         
     def parameter_input(self):
-       
+        print('''
+              ====================== manually input ==========================
+              ''')
         print('''
               Please input:
-              solute influent concentration C0 in mg/L
-              flow velocity in column U in cm/h
-              dispersion coeffiecient D in cm2/h
-              length of column L in cm
-              number of terms to use in series solution n
-              You can type c0, u, d, l, or n to jump to the corresponding parameter
-              Type enter will use the current values
+              solute influent concentration C0 in mg/L,
+              flow velocity in column U in cm/h,
+              dispersion coeffiecient D in cm2/h,
+              length of column L in cm,
+              number of terms to use in series solution n.
+              You can type c0, u, d, l, or n to jump to the corresponding parameter.              
+              Hit enter will keep the current value.
+              You can type q or e to exit.
+              Case NOT sensitive.
               ''')
         
         self.C0_input()        
@@ -227,6 +240,8 @@ class Column_tracer():
                 break
             elif user_input.lower() in self.input_dict.keys():
                 self.input_dict[user_input.lower()]()
+            elif user_input.lower() in self.quit_list:
+                sys.exit()
             else:
                 try:
                     self.C0 = float(user_input)
@@ -244,6 +259,8 @@ class Column_tracer():
                 break
             elif user_input.lower() in self.input_dict.keys():
                 self.input_dict[user_input.lower()]()
+            elif user_input.lower() in self.quit_list:
+                sys.exit()
             else:
                 try:
                     self.U = float(user_input)
@@ -261,6 +278,8 @@ class Column_tracer():
                 break
             elif user_input.lower() in self.input_dict.keys():
                 self.input_dict[user_input.lower()]()
+            elif user_input.lower() in self.quit_list:
+                sys.exit()
             else:
                 try:
                     self.D = float(user_input)
@@ -278,6 +297,8 @@ class Column_tracer():
                 break
             elif user_input.lower() in self.input_dict.keys():
                 self.input_dict[user_input.lower()]()
+            elif user_input.lower() in self.quit_list:
+                sys.exit()
             else:
                 try:
                     self.L = float(user_input)
@@ -295,6 +316,8 @@ class Column_tracer():
                 break
             elif user_input.lower() in self.input_dict.keys():
                 self.input_dict[user_input.lower()]()
+            elif user_input.lower() in self.quit_list:
+                sys.exit()
             else:
                 try:
                     self.n = int(user_input)
