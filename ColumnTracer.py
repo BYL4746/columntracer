@@ -226,7 +226,7 @@ class Column_tracer():
 
     def C0_input(self):
         while True:
-            user_input = input('Solute influent concentration C0 in mg/L (current is {}): '.format(self.C0))
+            user_input = input('Solute influent concentration C0 in mg/L (current value is {}): '.format(self.C0))
             if user_input == '':
                 print('C0 is set to {} '.format(self.C0))
                 break
@@ -243,7 +243,7 @@ class Column_tracer():
         
     def U_input(self):
         while True:
-            user_input = input('Flow velocity in column U in cm/h (current is {}): '.format(self.U))
+            user_input = input('Flow velocity in column U in cm/h (current value is {}): '.format(self.U))
             if user_input == '':
                 print('U is set to {} '.format(self.U))
                 break
@@ -260,7 +260,7 @@ class Column_tracer():
     
     def D_input(self):
         while True:
-            user_input = input('Dispersion coeffiecient D in cm2/h (current is {}): '.format(self.D))
+            user_input = input('Dispersion coeffiecient D in cm2/h (current value is {}): '.format(self.D))
             if user_input == '':
                 print('D is set to {} '.format(self.D))
                 break
@@ -277,7 +277,7 @@ class Column_tracer():
     
     def L_input(self):
         while True:
-            user_input = input('Length of column L in cm (current is {}): '.format(self.L))
+            user_input = input('Length of column L in cm (current value is {}): '.format(self.L))
             if user_input == '':
                 print('L is set to {} '.format(self.L))
                 break
@@ -294,7 +294,7 @@ class Column_tracer():
     
     def n_input(self):
         while True:
-            user_input = input('Number of terms to use in series solution (current is {}): '.format(self.n))
+            user_input = input('Number of terms to use in series solution (current value is {}): '.format(self.n))
             if user_input == '':
                 print('n is set to {} '.format(self.n))
                 break
