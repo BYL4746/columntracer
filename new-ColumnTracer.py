@@ -12,6 +12,7 @@ class ColumnTracer():
                  D = 100,
                  L = 30,
                  n = 100):
+        
         self.input_dict = {'c0': self.C0_input, 'u': self.U_input, 
                            'd': self.D_input, 'l': self.L_input, 
                            'n': self.n_input}
@@ -29,6 +30,13 @@ class ColumnTracer():
         self.n = n
         
         self.demo_choice = input('Do you want run a demo? (y/n):')
+        
+        self.plotting_choice = input('Do you want to plot the results? (y/n):')
+        if self.plotting_choice.lower() == 'y' or self.plotting_choice.lower() == 'yes':
+            self.plotting_flag = True
+        else:
+            self.plotting_flag = False
+            
         if self.demo_choice.lower() == 'y' or self.demo_choice.lower() == 'yes':
             self.demo_run()
         elif self.demo_choice.lower() == 'n' or self.demo_choice.lower() == 'no' or self.demo_choice.lower() == '':
@@ -67,48 +75,52 @@ class ColumnTracer():
     def characteristic_one_para(self, beta):
         return beta * np.cos(beta) / np.sin(beta) - beta**2/self.Pe + self.Pe/4
     
+    def Peclet_number_calculation(self): # TODO: move to init
+        return self.U * self.L / self.D
+    
     def characteristic_equation(self):
         # Compute the Peclet number
-        self.Pe = self.U * self.L / self.D
+        self.Pe = self.Peclet_number_calculation()
         
         # Make a list of the first few singularities
         singularities = [np.pi * i for i in range(11)]
         
-        # Make a customized plot area
-        fig, ax = plt.subplots()
-        ax.set_ylim(-10,10)
-        ax.set_xlim(0, np.pi * 10)
-        ax.axhline(y=0, c = 'k', lw = 1)
-        ax.set_xlabel(r'$\beta$', weight = 'bold', fontsize = 14)
-        ax.set_ylabel(r'$F(Pe, \beta)=\beta$ $\cot$ $\beta - \frac{\beta}{Pe} + \frac{Pe}{4}$', weight = 'bold', fontsize = 14)
-        ax.set_yticklabels([])
-        ax.set_yticks([])
-        ax.set_xticks(singularities)
-        ax.set_xticklabels(['{}$\pi$'.format(i) for i in range(len(singularities))])
-        ax.set_title('Characteristic Equation for Eigenvalues', weight = 'bold', fontsize = 14)
+        if self.plotting_flag == True:
+            # Make a customized plot area
+            fig, ax = plt.subplots()
+            ax.set_ylim(-10,10)
+            ax.set_xlim(0, np.pi * 10)
+            ax.axhline(y=0, c = 'k', lw = 1)
+            ax.set_xlabel(r'$\beta$', weight = 'bold', fontsize = 14)
+            ax.set_ylabel(r'$F(Pe, \beta)=\beta$ $\cot$ $\beta - \frac{\beta}{Pe} + \frac{Pe}{4}$', weight = 'bold', fontsize = 14)
+            ax.set_yticklabels([])
+            ax.set_yticks([])
+            ax.set_xticks(singularities)
+            ax.set_xticklabels(['{}$\pi$'.format(i) for i in range(len(singularities))])
+            ax.set_title('Characteristic Equation for Eigenvalues', weight = 'bold', fontsize = 14)
         
-        # Go through each interval (n * pi through (n+1) * pi) to plot
-        # the function and singularities
-        for i in range(len(singularities)-1):
-            s1 = singularities[i]
-            s2 = singularities[i+1]
-            xs = np.arange(s1 + np.pi/100, s2, np.pi/100)
-            ys = self.characteristic(self.Pe, xs)
-            ax.plot(xs,ys, c = 'r', lw = 1.5)
-            ax.axvline(x=s2, c = 'k', ls = '--', lw = 1)
-        
-        # add an annotation to point out the first few betas
-        arrowprops={'arrowstyle':'-|>','connectionstyle':'arc3,rad=-.4','fc':'k'}
-        ax.annotate(r'$\beta_{1}$', xy = [1.54,0], xytext = [1,3], fontsize = 12, arrowprops = arrowprops)
-        ax.annotate(r'$\beta_{2}$', xy = [3.88,0], xytext = [4.3,3], fontsize = 12, arrowprops = arrowprops)
-        ax.annotate(r'$\beta_{3}$', xy = [6.72,0], xytext = [7.5,3], fontsize = 12, arrowprops = arrowprops)
-        
-        # make a formatted manual legend
-        ls = [lines.Line2D([-1],[-1], c = 'r', lw = 1.5), 
-        lines.Line2D([-1],[-1], c = 'k', ls = '--', lw = 1)]
-        labels = ['Characteristic Equation','Singularities']
-        leg = plt.legend(loc = 2, facecolor = 'white', framealpha = 1, handles = ls, labels = labels)
-        leg.get_frame().set_edgecolor('k')
+            # Go through each interval (n * pi through (n+1) * pi) to plot
+            # the function and singularities
+            for i in range(len(singularities)-1):
+                s1 = singularities[i]
+                s2 = singularities[i+1]
+                xs = np.arange(s1 + np.pi/100, s2, np.pi/100)
+                ys = self.characteristic(self.Pe, xs)
+                ax.plot(xs,ys, c = 'r', lw = 1.5)
+                ax.axvline(x=s2, c = 'k', ls = '--', lw = 1)
+            
+            # add an annotation to point out the first few betas
+            arrowprops={'arrowstyle':'-|>','connectionstyle':'arc3,rad=-.4','fc':'k'}
+            ax.annotate(r'$\beta_{1}$', xy = [1.54,0], xytext = [1,3], fontsize = 12, arrowprops = arrowprops)
+            ax.annotate(r'$\beta_{2}$', xy = [3.88,0], xytext = [4.3,3], fontsize = 12, arrowprops = arrowprops)
+            ax.annotate(r'$\beta_{3}$', xy = [6.72,0], xytext = [7.5,3], fontsize = 12, arrowprops = arrowprops)
+            
+            # make a formatted manual legend
+            ls = [lines.Line2D([-1],[-1], c = 'r', lw = 1.5), 
+            lines.Line2D([-1],[-1], c = 'k', ls = '--', lw = 1)]
+            labels = ['Characteristic Equation','Singularities']
+            leg = plt.legend(loc = 2, facecolor = 'white', framealpha = 1, handles = ls, labels = labels)
+            leg.get_frame().set_edgecolor('k')
         
     
     def eigen_values(self):
@@ -164,23 +176,25 @@ class ColumnTracer():
                                np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * 
                                series.sum())
                 Cs[-1].append(C)
-            
-        # Plot the results
-        fig, ax = plt.subplots()
-        ax.set_xlabel('Position in column (cm)', size = 12, weight = 'bold')
-        ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
-        ax.set_title('Column Concentration Profiles', size = 14, weight = 'bold')
-        for t,C in zip(times,Cs):
-            ax.plot(positions,C, label = 't = {:.1f} h'.format(t))            
-        leg = ax.legend(bbox_to_anchor = (1.02, 0.5), loc = 6, fontsize = 12) 
-        leg.get_frame().set_linewidth(0)
+        print(Cs)
+        
+        if self.plotting_flag == True:  # TODO: new function  
+            # Plot the results
+            fig, ax = plt.subplots()
+            ax.set_xlabel('Position in column (cm)', size = 12, weight = 'bold')
+            ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
+            ax.set_title('Column Concentration Profiles', size = 14, weight = 'bold')
+            for t,C in zip(times,Cs):
+                ax.plot(positions,C, label = 't = {:.1f} h'.format(t))            
+            leg = ax.legend(bbox_to_anchor = (1.02, 0.5), loc = 6, fontsize = 12) 
+            leg.get_frame().set_linewidth(0)
         
         
         
 
     def effluent_concentration(self):
         # Define an array time points to estimate the function
-        times = np.arange(0, 12, 0.1)
+        times = np.arange(0, 12, 0.1) # TODO: mandatory input of final time, time interval(data points)
         
         # Store the results in a list
         Cs = []
@@ -196,24 +210,26 @@ class ColumnTracer():
             # Sum the series and convert the result to concentration at the point
             C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
             Cs.append(C)
+        # print(Cs)  
         
-        # Plot the results
-        fig, ax = plt.subplots()
-        ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
-        ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
-        ax.set_title('Column Breakthrough Curve', size = 14, weight = 'bold')
-        ax.plot(times, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
-        
-        # Add a couple of other lines for explanation of behavior
-        xs = [0, self.L/self.U, self.L/self.U, 12]
-        ys = [0, 0, self.C0, self.C0]
-        ax.plot(xs, ys, ls = '-.', lw = 1, c = 'b', label = 'Plug flow')
-        ax.text(0.5,65,'Effects of Dispersion', fontsize = 12)
-        arrowprops = {'arrowstyle':'<|-|>'}
-        ax.annotate('', xy = (5.5,61), xytext = (0.5,61), ha = 'right', va = 'center', arrowprops = arrowprops)
-        leg = ax.legend()
-        plt.show()
-        # plt.savefig('breakthrough')
+        if self.plotting_flag == True:
+            # Plot the results
+            fig, ax = plt.subplots()
+            ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
+            ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
+            ax.set_title('Column Breakthrough Curve', size = 14, weight = 'bold')
+            ax.plot(times, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
+            
+            # Add a couple of other lines for explanation of behavior
+            xs = [0, self.L/self.U, self.L/self.U, 12]
+            ys = [0, 0, self.C0, self.C0]
+            ax.plot(xs, ys, ls = '-.', lw = 1, c = 'b', label = 'Plug flow')
+            ax.text(0.5,65,'Effects of Dispersion', fontsize = 12)
+            arrowprops = {'arrowstyle':'<|-|>'}
+            ax.annotate('', xy = (5.5,61), xytext = (0.5,61), ha = 'right', va = 'center', arrowprops = arrowprops)
+            leg = ax.legend()
+            plt.show()
+            # plt.savefig('breakthrough')
         
         
     def parameter_input(self):
