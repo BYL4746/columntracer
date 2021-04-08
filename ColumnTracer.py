@@ -125,7 +125,7 @@ class ColumnTracer():
             # characteristic equation within a given interval
             self.betas.append(optimize.brentq(self.characteristic_one_para, mi, ma))
     
-        
+            
     
     def eigen_function(self, Pe, B, x, t):
         # Define a function to use to compute the value of the "ith" term
