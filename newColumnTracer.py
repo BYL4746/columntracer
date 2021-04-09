@@ -274,8 +274,8 @@ class ColumnTracer():
         return None
         
 # TODO: make it available on pip
-
+# TODO: new function: input t, get C
 if __name__ == '__main__':
     c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=True)
     
-    
+   
