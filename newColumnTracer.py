@@ -28,7 +28,7 @@ class ColumnTracer():
         self.n = n
         
         # calculate Peclet number
-        self.Pe = self.U * self.L / self.D
+        self.Pe = self.U * self.L / self.D # TODO: function to calculate Pe
         
         # calculate betas
         self.eigen_values()
@@ -121,7 +121,7 @@ class ColumnTracer():
                 else:
                     plt.savefig(str(savefig), dpi = savefig_dpi)
                 
-    
+    # TODO: no _ between eigen and values
     def eigen_values(self,
                      print_betas = False):
         # Make a list of the intervals to look for each value of beta
@@ -141,7 +141,8 @@ class ColumnTracer():
             print('betas are:\n', self.betas)
         
         return self.betas
-        
+    
+        # TODO: no _
     def _eigen_function(self, Pe, B, x, t):
         # Define a function to use to compute the value of the "ith" term
         # in the series of eigenfunctions that are summed in the solution
@@ -272,7 +273,7 @@ class ColumnTracer():
         
         return None
         
-
+# TODO: make it available on pip
 
 if __name__ == '__main__':
     c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=True)
