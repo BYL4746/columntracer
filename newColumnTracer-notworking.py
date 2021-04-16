@@ -28,10 +28,10 @@ class ColumnTracer():
         self.n = n
         
         # calculate Peclet number
-        self.Pe = self._Pe_calculation(self.U, self.L, self.D)
+        # self.Pe = self._Pe_calculation(self.U, self.L, self.D)
         
         # calculate betas
-        self.betas = self.eigenvalues()
+        # self.eigen_values()
         
         self.demo_choice = demo
         self.demo_plot = demo_plot
@@ -57,7 +57,7 @@ class ColumnTracer():
               number of terms to use in series solution n = 100. 
               ''')
         self.characteristic_equation()
-        self.eigenvalues()
+        self.eigen_values()
         self.concentration_profile()
         self.effluent_concentration(time_end = 12, interval = 0.1)
     
@@ -68,9 +68,11 @@ class ColumnTracer():
         # Define the characteristic equation function
         return beta * np.cos(beta) / np.sin(beta) - beta ** 2/Pe + Pe/4
     
-    def _characteristic_one_para(self, beta):
-        return beta * np.cos(beta) / np.sin(beta) - beta**2/self.Pe + self.Pe/4
+    # def _characteristic_one_para(self, beta):
+    #     return beta * np.cos(beta) / np.sin(beta) - beta**2/self.Pe + self.Pe/4
     
+    def _characteristic_one_para(self, beta, D):
+        return beta * np.cos(beta) / np.sin(beta) - beta**2/self._Pe_calculation(self.U, self.L, D) + self._Pe_calculation(self.U, self.L, D)/4
     
     
     def characteristic_equation(self, 
@@ -125,12 +127,13 @@ class ColumnTracer():
                 else:
                     plt.savefig(str(savefig), dpi = savefig_dpi)
                 
-    def eigenvalues(self,
+    # TODO: no _ between eigen and values
+    def eigen_values(self,
                      print_betas = False):
         # Make a list of the intervals to look for each value of beta
         intervals = [np.pi * i for i in range(self.n)]
         # Store the eigenvalues in a list
-        betas = []
+        self.betas = []
         # iterate through the interval and find the beta value
         for i in range(len(intervals) - 1):
             mi = intervals[i] + 10**-10
@@ -138,14 +141,15 @@ class ColumnTracer():
             
             # Brent's method can find the value of the 
             # characteristic equation within a given interval
-            betas.append(optimize.brentq(self._characteristic_one_para, mi, ma))
+            self.betas.append(optimize.brentq(self._characteristic_one_para, mi, ma))
         
         if print_betas == True:
-            print('betas are:\n', betas)
+            print('betas are:\n', self.betas)
         
-        return betas
+        return self.betas
     
-    def _eigenfunction(self, Pe, B, x, t):
+        # TODO: no _
+    def _eigen_function(self, Pe, B, x, t):
         # Define a function to use to compute the value of the "ith" term
         # in the series of eigenfunctions that are summed in the solution
         return (B * (B * np.cos(B * x) + Pe/2 * np.sin(B * x)) / 
@@ -175,7 +179,7 @@ class ColumnTracer():
                 x = p / self.L
                 
                 # Get the eigenfunction values for all the eigenvalues
-                series = self._eigenfunction(self.Pe, np.array(self.betas), x, tau)
+                series = self._eigen_function(self.Pe, np.array(self.betas), x, tau)
                 
                 # Sum the series and convert the result to concentration at the point
                 C = self.C0 * (1 - 2 * self.Pe * 
@@ -217,8 +221,7 @@ class ColumnTracer():
                                savefig_dpi = 200):
         # Define an array time points to estimate the function
         # time_end and interval are required
-        self.interval = interval
-        times = np.arange(time_start, time_end, self.interval) 
+        times = np.arange(time_start, time_end, interval) 
         
         # Store the results in a list
         Cs = []
@@ -229,7 +232,7 @@ class ColumnTracer():
             x = 1
             
             # Get the eigenfunction values for all the eigenvalues
-            series = self._eigenfunction(self.Pe, np.array(self.betas), x, tau)
+            series = self._eigen_function(self.Pe, np.array(self.betas), x, tau)
              
             # Sum the series and convert the result to concentration at the point
             C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
@@ -264,109 +267,24 @@ class ColumnTracer():
                     plt.savefig(str(savefig), dpi = savefig_dpi)
         return Cs
     
-    def get_concentration(self,
-                          time,
-                          time_start = 0,
-                          interval = None):
-        if interval != None:
-            self.interval = interval
-        times = np.arange(time_start, time, self.interval) 
-        
-        Cs = []
-        for t in times:
-            tau = self.D * t / self.L**2
-            x = 1
-            
-            # Get the eigenfunction values for all the eigenvalues
-            series = self._eigenfunction(self.Pe, np.array(self.betas), x, tau)
-             
-            # Sum the series and convert the result to concentration at the point
-            C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
-            Cs.append(C)
-            
-        return Cs[-1]
+    def _C_calculation(self, t, D):
+        x = 1
+        return self.C0 * (1 - 2 * self._Pe_calculation(self.U, self.L, D) 
+                          * np.exp(self._Pe_calculation(self.U, self.L, D)/2 * x - self._Pe_calculation(self.U, self.L, D)**2/4 * D * t / self.L**2) 
+                          * self._eigen_function(self._Pe_calculation(self.U, self.L, D), 
+                                                  np.array(self.eigen_values()), 
+                                                  x, 
+                                                  D * t / self.L**2).sum()
+                          )
     
-    def _effluent_calculation(self,
-                              time_start,
-                              time_end,
-                              time_size,
-                              D):
     
-        times = np.linspace(time_start, time_end, time_size)
-        
-        self.Pe = self._Pe_calculation(self.U, self.L, D)
-        betas = self.eigenvalues()
-        
-        # Store the results in a list
-        Cs = []
-        
-        # Estimate the concentration for each dimensionless time at x = 1
-        for t in times:
-            tau = D * t / self.L**2
-            x = 1
-            
-            # Get the eigenfunction values for all the eigenvalues
-            series = self._eigenfunction(self.Pe, np.array(betas), x, tau)
-             
-            # Sum the series and convert the result to concentration at the point
-            C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
-            Cs.append(C)
-        
-        return Cs
-        
-        
-        
-    def _MSE(self, x, y):
-        squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(x, y)]
-        mse = sum(squared_difference)
-        return mse
-        
     def fit_D(self,
               time,
-              conc, 
-              max_attempts = 20):
-        # D = [1, 50, 100, 150, 200]
-        D = np.linspace(1, 200, 20)
-        # D = [30, 60, 90]
-        
-        time_start = time[0]
-        time_end = time[-1]
-        time_size = len(time)
-        
-        default_D_mse = {}
-        for d_values in D:
-            Cs = self._effluent_calculation(time_start, time_end, time_size, d_values)
-            mse = self._MSE(Cs, conc)
-            default_D_mse[d_values] = mse
-        
-        default_D_mse = dict(sorted(default_D_mse.items(), key = lambda d: d[1]))
-        min_mse_D = list(default_D_mse)[0]
-        min_mse_2_D = list(default_D_mse)[1]
-        D_mse_dict = {min_mse_D: default_D_mse[min_mse_D], 
-                      min_mse_2_D: default_D_mse[min_mse_2_D]}
-        print(default_D_mse)
-        
-        attempt = 0
-        while attempt < max_attempts:   
-            current_D = (list(D_mse_dict)[0] + list(D_mse_dict)[1]) / 2 # Python 3.6 required
-            Cs = self._effluent_calculation(time_start, time_end, time_size, current_D)
-            mse = self._MSE(Cs, conc)
-            D_mse_dict[current_D] = mse
-            D_mse_dict = dict(sorted(D_mse_dict.items(), key = lambda d: d[1]))
-            D_pop = list(D_mse_dict)[-1]
-            D_mse_dict.pop(D_pop)
-            
-            attempt += 1
-        
-        result_D = list(D_mse_dict)[0]
-        result_mse = D_mse_dict[result_D]
-        print('D is {D}, mse is {mse}'.format(D = result_D, mse = result_mse))
-        
-        
-        
-        
-        
-
+              conc):
+        xdata = time
+        ydata = conc
+        popt, pcov = optimize.curve_fit(self._C_calculation, xdata, ydata)
+        print(popt)
         
         
         
@@ -376,36 +294,23 @@ class ColumnTracer():
         
         
 # TODO: make it available on pip
+# TODO: new function: input t, get C
 if __name__ == '__main__':
     # c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=True)
-    c = ColumnTracer(D = 63)
-    c.effluent_concentration(time_end=12, interval=0.1, print_conc=True)
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # c = ColumnTracer()
-    # time = [ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ,
-    #     1.1,  1.2,  1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2. ,  2.1,
-    #     2.2,  2.3,  2.4,  2.5,  2.6,  2.7,  2.8,  2.9,  3. ,  3.1,  3.2,
-    #     3.3,  3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4. ,  4.1,  4.2,  4.3,
-    #     4.4,  4.5,  4.6,  4.7,  4.8,  4.9,  5. ,  5.1,  5.2,  5.3,  5.4,
-    #     5.5,  5.6,  5.7,  5.8,  5.9,  6. ,  6.1,  6.2,  6.3,  6.4,  6.5,
-    #     6.6,  6.7,  6.8,  6.9,  7. ,  7.1,  7.2,  7.3,  7.4,  7.5,  7.6,
-    #     7.7,  7.8,  7.9,  8. ,  8.1,  8.2,  8.3,  8.4,  8.5,  8.6,  8.7,
-    #     8.8,  8.9,  9. ,  9.1,  9.2,  9.3,  9.4,  9.5,  9.6,  9.7,  9.8,
-    #     9.9, 10. , 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9,
-    #     11. , 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9]
-    # conc = [-0.0364823443793183, 2.0872192862952943e-12, 3.1287579083105754e-06, 0.0010020258925158565, 0.019322359212570195, 0.11836208413558147, 0.4043632723391255, 0.9839664335757781, 1.9304988243840637, 3.2743464067235495, 5.008822532605883, 7.101332765726786, 9.504194775878483, 12.163068855780846, 15.022763303236609, 18.030854958983454, 21.139703900330808, 24.307374798996396, 27.49785777834186, 30.680867813689318, 33.831411255228815, 36.92924195182944, 39.95828347629913, 42.906063031658306, 45.76318237789182, 48.52283820778807, 51.18039640252658, 53.73301983123506, 56.17934668044553, 58.51921494458423, 60.75342817276259, 62.8835575214161, 64.91177539533, 66.84071633747325, 68.67336126786977, 70.41294162352307, 72.06286038644274, 73.62662738979137, 75.10780665614291, 76.50997384492484, 77.83668216937679, 79.09143538945568, 80.27766669948006, 81.39872251161005, 82.45785029213144, 83.4581897403678, 84.40276671299272, 85.29448939234607, 86.13614627852532, 86.93040565367201, 87.67981622486035, 88.38680870091893, 89.05369809975141, 89.68268661743711, 90.27586691959179, 90.8352257399996, 91.36264769211404, 91.85991921628207, 92.32873259999033, 92.77069002050591, 93.18730756936074, 93.5800192265204, 93.95018075905514, 94.29907352491485, 94.62790816719327, 94.93782818820954, 95.22991339597164, 95.5051832182337, 95.76459988150984, 96.0090714541462, 96.23945475394578, 96.45655812194741, 96.66114406482646, 96.8539317690552, 97.03559949046512, 97.20678682322448, 97.3680968525031, 97.52009819526583, 97.66332693373012, 97.79828844605882, 97.92545913884673, 98.04528808590801, 98.15819857779192, 98.26458958634996, 98.36483714855669, 98.45929567365262, 98.54829917753426, 98.63216244816775, 98.71118214565013, 98.78563784038846, 98.85579299271377, 98.92189587709498, 98.98418045396869, 99.04286719205521, 99.09816384388907, 99.15026617715549, 99.19935866429154, 99.24561513268314, 99.28919937766712, 99.33026574042975, 99.368959652782, 99.40541815068367, 99.43977035828794, 99.47213794417998, 99.50263555139136, 99.53137120268455, 99.55844668251865, 99.58395789702841, 99.60799521327446, 99.63064377895152, 99.65198382367451, 99.6720909428995, 99.6910363654761, 99.70888720577153, 99.72570670125343, 99.74155443636712, 99.75648655349629, 99.77055595175042, 99.78381247427993, 99.79630308477965]
-    
-    # c.fit_D(time, conc)
+    c = ColumnTracer()
+    time = [ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ,
+        1.1,  1.2,  1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2. ,  2.1,
+        2.2,  2.3,  2.4,  2.5,  2.6,  2.7,  2.8,  2.9,  3. ,  3.1,  3.2,
+        3.3,  3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4. ,  4.1,  4.2,  4.3,
+        4.4,  4.5,  4.6,  4.7,  4.8,  4.9,  5. ,  5.1,  5.2,  5.3,  5.4,
+        5.5,  5.6,  5.7,  5.8,  5.9,  6. ,  6.1,  6.2,  6.3,  6.4,  6.5,
+        6.6,  6.7,  6.8,  6.9,  7. ,  7.1,  7.2,  7.3,  7.4,  7.5,  7.6,
+        7.7,  7.8,  7.9,  8. ,  8.1,  8.2,  8.3,  8.4,  8.5,  8.6,  8.7,
+        8.8,  8.9,  9. ,  9.1,  9.2,  9.3,  9.4,  9.5,  9.6,  9.7,  9.8,
+        9.9, 10. , 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9,
+       11. , 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9]
+    conc = [-0.014037701182689766, 1.036803976006695e-09, 0.0001976591561758667, 0.013695841526328856, 0.12310304180530585, 0.47803934609247367, 1.2076522681544244, 2.373224945265162, 3.973397933893341, 5.966601377319336, 8.29153417694516, 10.8810472493443, 13.670190429236973, 16.60025268650194, 19.620356993578447, 22.68768049780281, 25.766966617055775, 28.829720430890127, 31.853306086607112, 34.820061569234696, 37.716486342639044, 40.532523828123814, 43.26094263624911, 45.89681134937358, 48.43705757024426, 50.8801006260045, 53.22554743212717, 55.473941830725195, 57.6265588083445, 59.68523614760392, 61.6522371624501, 63.53013915739207, 65.32174311955502, 67.03000089906695, 68.65795676704658, 70.20870077372234, 71.68533177523177, 73.0909283691419, 74.42852628722724, 75.70110104967918, 76.91155489642772, 78.06270718604638, 79.15728759703474, 80.19793158535515, 81.18717765029925, 82.12746604170044, 83.02113860819009, 83.87043954110646, 84.67751681386531, 85.44442415378485, 86.17312341393635, 86.86548723771772, 87.52330192948426, 88.14827046150494, 88.74201556139506, 89.3060828355493, 89.8419438934001, 90.35099944492634, 90.83458235003503, 91.2939606034832, 91.73034024310502, 92.14486817242704, 92.53863489143399, 92.91267713140148, 93.26798039143672, 93.60548137574004, 93.9260703316843, 94.23059328965802, 94.51985420627476, 94.79461701305237, 95.05560757303962, 95.30351554813907, 95.53899618006396, 95.7626719879887, 95.97513438602151, 96.17694522365436, 96.36863825233817, 96.55072052129886, 96.7236737056557, 96.887955369836, 97.04400016919938, 97.1922209926968, 97.3330100492961, 97.46673990080755, 97.59376444364385, 97.71441984194858, 97.82902541442725, 97.93788447711607, 98.04128514422712, 98.1395010891132, 98.23279226730364, 98.3214056034732, 98.40557564411954, 98.48552517764149, 98.56146582343041, 98.63359859150982, 98.70211441418503, 98.76719465109322, 98.82901156897813, 98.88772879744727, 98.94350176190957, 98.9964780948317, 99.04679802639511, 99.09459475558316, 99.13999480267611, 99.18311834408368, 99.22407953039833, 99.26298678850914, 99.29994310857384, 99.3350463166069, 99.36838933340412, 99.40006042048793, 99.4301434137233, 99.45871794522236, 99.48585965412403, 99.5116403868064, 99.53612838706137, 99.55938847673444, 99.58148222730776, 99.60246812288028]
+    c.fit_D(time, conc)
     
     
    
