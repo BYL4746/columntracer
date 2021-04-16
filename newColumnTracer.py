@@ -264,6 +264,7 @@ class ColumnTracer():
                     plt.savefig(str(savefig), dpi = savefig_dpi)
         return Cs
     
+    # TODO: change this 
     def get_concentration(self,
                           time,
                           time_start = 0,
@@ -375,7 +376,11 @@ class ColumnTracer():
         
         
         
-# TODO: make it available on pip
+# TODO: make jupyter notebook with examples
+# TODO: test files
+
+
+
 if __name__ == '__main__':
     # c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=True)
     c = ColumnTracer(D = 63)
