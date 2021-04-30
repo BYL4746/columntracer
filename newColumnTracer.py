@@ -11,7 +11,7 @@ class ColumnTracer():
                  U = 10,
                  D = 100,
                  L = 30,
-                 n = 100,
+                 n = 1000,
                  demo = False,
                  demo_plot = False,
                  demo_plot_save = False):
@@ -73,16 +73,22 @@ class ColumnTracer():
 
 
 
-    def characteristic_equation(self,
+    def characteristic_equation(self,                                
                                 plot = False,
                                 savefig = False,
-                                savefig_dpi = 200):
+                                savefig_dpi = 200,
+                                figsize = None,
+                                dpi = None,
+                                chara_color = 'r',
+                                chara_width = 1.5,
+                                singul_color = 'k',
+                                singul_width = 1):
         # Make a list of the first few singularities
         singularities = [np.pi * i for i in range(11)]
-
+        
         if self.demo_plot == True or plot == True:
             # Make a customized plot area
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=figsize, dpi = dpi)
             ax.set_ylim(-10,10)
             ax.set_xlim(0, np.pi * 10)
             ax.axhline(y=0, c = 'k', lw = 1)
@@ -101,22 +107,18 @@ class ColumnTracer():
                 s2 = singularities[i+1]
                 xs = np.arange(s1 + np.pi/100, s2, np.pi/100)
                 ys = self._characteristic(self.Pe, xs)
-                ax.plot(xs,ys, c = 'r', lw = 1.5)
-                ax.axvline(x=s2, c = 'k', ls = '--', lw = 1)
-
-            # add an annotation to point out the first few betas
-            arrowprops={'arrowstyle':'-|>','connectionstyle':'arc3,rad=-.4','fc':'k'}
-            ax.annotate(r'$\beta_{1}$', xy = [1.54,0], xytext = [1,3], fontsize = 12, arrowprops = arrowprops)
-            ax.annotate(r'$\beta_{2}$', xy = [3.88,0], xytext = [4.3,3], fontsize = 12, arrowprops = arrowprops)
-            ax.annotate(r'$\beta_{3}$', xy = [6.72,0], xytext = [7.5,3], fontsize = 12, arrowprops = arrowprops)
+                ax.plot(xs,ys, c = chara_color, lw = chara_width)
+                ax.axvline(x=s2, c = singul_color, ls = '--', lw = singul_width)
 
             # make a formatted manual legend
-            ls = [lines.Line2D([-1],[-1], c = 'r', lw = 1.5),
-            lines.Line2D([-1],[-1], c = 'k', ls = '--', lw = 1)]
+            ls = [lines.Line2D([-1],[-1], c = chara_color, lw = chara_width),
+            lines.Line2D([-1],[-1], c = singul_color, ls = '--', lw = singul_width)]
             labels = ['Characteristic Equation','Singularities']
             leg = plt.legend(loc = 2, facecolor = 'white', framealpha = 1, handles = ls, labels = labels)
             leg.get_frame().set_edgecolor('k')
-
+            
+            if dpi != None:
+                savefig_dpi = dpi
             if self.demo_plot_save == True:
                 plt.savefig('characteristic_equation', dpi = savefig_dpi)
             elif savefig != False:
@@ -157,6 +159,8 @@ class ColumnTracer():
                                            0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6,
                                            0.7, 0.8, 0.85, 0.9, 0.95, 0.98, 0.99, 1],
                               plot = False,
+                              figsize = None, 
+                              dpi = None,
                               print_conc = False,
                               savefig = False,
                               savefig_dpi = 200):
@@ -187,31 +191,49 @@ class ColumnTracer():
             print(Cs)
 
         if self.demo_plot == True or plot == True:
-            # Plot the results
-            fig, ax = plt.subplots()
-            ax.set_xlabel('Position in column (cm)', size = 12, weight = 'bold')
-            ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
-            ax.set_title('Column Concentration Profiles', size = 14, weight = 'bold')
-            for t, C in zip(times,Cs):
-                ax.plot(column_positions, C, label = 't = {:.1f} h'.format(t))
-            leg = ax.legend(bbox_to_anchor = (1.02, 0.5), loc = 6, fontsize = 12)
-            leg.get_frame().set_linewidth(0)
-
-            if self.demo_plot_save == True:
-                plt.savefig('concentration_profile', dpi = savefig_dpi, bbox_inches='tight')
-            elif savefig != False:
-                if savefig == True:
-                    plt.savefig('concentration_profile', dpi = savefig_dpi, bbox_inches='tight')
-                else:
-                    plt.savefig(str(savefig), dpi = savefig_dpi, bbox_inches='tight')
-
+            self._concentration_profile_plot(Cs, times, column_positions, 
+                                             figsize, dpi, savefig, savefig_dpi)
+            
         return Cs
-
+    
+    def _concentration_profile_plot(self, 
+                                    Cs, 
+                                    times, 
+                                    column_positions, 
+                                    figsize = None, 
+                                    dpi = None, 
+                                    savefig = False,
+                                    savefig_dpi = 200):
+        
+        fig, ax = plt.subplots(figsize = figsize, dpi = dpi)
+        ax.set_xlabel('Position in column (cm)', size = 12, weight = 'bold')
+        ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
+        ax.set_title('Column Concentration Profiles', size = 14, weight = 'bold')
+        for t, C in zip(times,Cs):
+            ax.plot(column_positions, C, label = 't = {:.1f} h'.format(t))
+        leg = ax.legend(bbox_to_anchor = (1.02, 0.5), loc = 6, fontsize = 12)
+        leg.get_frame().set_linewidth(0)
+        
+        if dpi != None:
+                savefig_dpi = dpi
+                
+        if self.demo_plot_save == True:
+            plt.savefig('concentration_profile', dpi = savefig_dpi, bbox_inches='tight')
+        elif savefig != False:
+            if savefig == True:
+                plt.savefig('concentration_profile', dpi = savefig_dpi, bbox_inches='tight')
+            else:
+                plt.savefig(str(savefig), dpi = savefig_dpi, bbox_inches='tight')        
+        
+        
+        
     def effluent_concentration(self,
                                time_end,
                                interval,
                                time_start = 0,
                                plot = False,
+                               figsize = None,
+                               dpi = None,
                                print_conc = False,
                                savefig = False,
                                savefig_dpi = 200):
@@ -239,32 +261,43 @@ class ColumnTracer():
             print(Cs)
 
         if self.demo_plot == True or plot == True:
-            # Plot the results
-            fig, ax = plt.subplots()
-            ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
-            ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
-            ax.set_title('Column Breakthrough Curve', size = 14, weight = 'bold')
-            ax.plot(times, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
-
-            # Add a couple of other lines for explanation of behavior
-            xs = [0, self.L/self.U, self.L/self.U, time_end]
-            ys = [0, 0, self.C0, self.C0]
-            ax.plot(xs, ys, ls = '-.', lw = 1, c = 'b', label = 'Plug flow')
-            ax.text(0.5,65,'Effects of Dispersion', fontsize = 12)
-            arrowprops = {'arrowstyle':'<|-|>'}
-            ax.annotate('', xy = (5.5,61), xytext = (0.5,61), ha = 'right', va = 'center', arrowprops = arrowprops)
-            leg = ax.legend()
-
-            if self.demo_plot_save == True:
-                plt.savefig('breakthrough_curve', dpi = savefig_dpi)
-            elif savefig != False:
-                if savefig == True:
-                    plt.savefig('breakthrough_curve', dpi = savefig_dpi)
-                else:
-                    plt.savefig(str(savefig), dpi = savefig_dpi)
+            self._breakthrough_curve_plot(Cs, times, time_end, figsize, 
+                                          dpi, savefig, savefig_dpi)
+        
         return Cs
 
+    def _breakthrough_curve_plot(self, 
+                                 Cs, 
+                                 times,
+                                 time_end,
+                                 figsize = None, 
+                                 dpi = None, 
+                                 savefig = False,
+                                 savefig_dpi = 200):
+        
+        fig, ax = plt.subplots(figsize = figsize, dpi = dpi)
+        ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
+        ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
+        ax.set_title('Column Breakthrough Curve', size = 14, weight = 'bold')
+        ax.plot(times, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
 
+        # Add a couple of other lines for explanation of behavior
+        xs = [0, self.L/self.U, self.L/self.U, time_end]
+        ys = [0, 0, self.C0, self.C0]
+        ax.plot(xs, ys, ls = '-.', lw = 1, c = 'b', label = 'Plug flow')
+        leg = ax.legend()
+        
+        if dpi != None:
+                savefig_dpi = dpi
+                
+        if self.demo_plot_save == True:
+            plt.savefig('breakthrough_curve', dpi = savefig_dpi)
+        elif savefig != False:
+            if savefig == True:
+                plt.savefig('breakthrough_curve', dpi = savefig_dpi)
+            else:
+                plt.savefig(str(savefig), dpi = savefig_dpi)        
+                
     def get_concentration(self,
                           time):
 
@@ -379,8 +412,9 @@ class ColumnTracer():
 
 
 if __name__ == '__main__':
-    # c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=True)
+    c = ColumnTracer(demo = True, demo_plot=True, demo_plot_save=False)
     # c = ColumnTracer()
+    # c.effluent_concentration(12, 0.1, plot = True, dpi = 300)
     # eff = c.get_concentration(time=2, interval=0.1)
     # eff = c.get_concentration(time=2)
     # print(eff)
@@ -395,18 +429,18 @@ if __name__ == '__main__':
 
 
 
-    c = ColumnTracer()
-    time = [ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ,
-        1.1,  1.2,  1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2. ,  2.1,
-        2.2,  2.3,  2.4,  2.5,  2.6,  2.7,  2.8,  2.9,  3. ,  3.1,  3.2,
-        3.3,  3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4. ,  4.1,  4.2,  4.3,
-        4.4,  4.5,  4.6,  4.7,  4.8,  4.9,  5. ,  5.1,  5.2,  5.3,  5.4,
-        5.5,  5.6,  5.7,  5.8,  5.9,  6. ,  6.1,  6.2,  6.3,  6.4,  6.5,
-        6.6,  6.7,  6.8,  6.9,  7. ,  7.1,  7.2,  7.3,  7.4,  7.5,  7.6,
-        7.7,  7.8,  7.9,  8. ,  8.1,  8.2,  8.3,  8.4,  8.5,  8.6,  8.7,
-        8.8,  8.9,  9. ,  9.1,  9.2,  9.3,  9.4,  9.5,  9.6,  9.7,  9.8,
-        9.9, 10. , 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9,
-        11. , 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9]
-    conc = [0, 2.0872192862952943e-12, 3.1287579083105754e-06, 0.0010020258925158565, 0.019322359212570195, 0.11836208413558147, 0.4043632723391255, 0.9839664335757781, 1.9304988243840637, 3.2743464067235495, 5.008822532605883, 7.101332765726786, 9.504194775878483, 12.163068855780846, 15.022763303236609, 18.030854958983454, 21.139703900330808, 24.307374798996396, 27.49785777834186, 30.680867813689318, 33.831411255228815, 36.92924195182944, 39.95828347629913, 42.906063031658306, 45.76318237789182, 48.52283820778807, 51.18039640252658, 53.73301983123506, 56.17934668044553, 58.51921494458423, 60.75342817276259, 62.8835575214161, 64.91177539533, 66.84071633747325, 68.67336126786977, 70.41294162352307, 72.06286038644274, 73.62662738979137, 75.10780665614291, 76.50997384492484, 77.83668216937679, 79.09143538945568, 80.27766669948006, 81.39872251161005, 82.45785029213144, 83.4581897403678, 84.40276671299272, 85.29448939234607, 86.13614627852532, 86.93040565367201, 87.67981622486035, 88.38680870091893, 89.05369809975141, 89.68268661743711, 90.27586691959179, 90.8352257399996, 91.36264769211404, 91.85991921628207, 92.32873259999033, 92.77069002050591, 93.18730756936074, 93.5800192265204, 93.95018075905514, 94.29907352491485, 94.62790816719327, 94.93782818820954, 95.22991339597164, 95.5051832182337, 95.76459988150984, 96.0090714541462, 96.23945475394578, 96.45655812194741, 96.66114406482646, 96.8539317690552, 97.03559949046512, 97.20678682322448, 97.3680968525031, 97.52009819526583, 97.66332693373012, 97.79828844605882, 97.92545913884673, 98.04528808590801, 98.15819857779192, 98.26458958634996, 98.36483714855669, 98.45929567365262, 98.54829917753426, 98.63216244816775, 98.71118214565013, 98.78563784038846, 98.85579299271377, 98.92189587709498, 98.98418045396869, 99.04286719205521, 99.09816384388907, 99.15026617715549, 99.19935866429154, 99.24561513268314, 99.28919937766712, 99.33026574042975, 99.368959652782, 99.40541815068367, 99.43977035828794, 99.47213794417998, 99.50263555139136, 99.53137120268455, 99.55844668251865, 99.58395789702841, 99.60799521327446, 99.63064377895152, 99.65198382367451, 99.6720909428995, 99.6910363654761, 99.70888720577153, 99.72570670125343, 99.74155443636712, 99.75648655349629, 99.77055595175042, 99.78381247427993, 99.79630308477965]
+    # c = ColumnTracer()
+    # time = [ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ,
+    #     1.1,  1.2,  1.3,  1.4,  1.5,  1.6,  1.7,  1.8,  1.9,  2. ,  2.1,
+    #     2.2,  2.3,  2.4,  2.5,  2.6,  2.7,  2.8,  2.9,  3. ,  3.1,  3.2,
+    #     3.3,  3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4. ,  4.1,  4.2,  4.3,
+    #     4.4,  4.5,  4.6,  4.7,  4.8,  4.9,  5. ,  5.1,  5.2,  5.3,  5.4,
+    #     5.5,  5.6,  5.7,  5.8,  5.9,  6. ,  6.1,  6.2,  6.3,  6.4,  6.5,
+    #     6.6,  6.7,  6.8,  6.9,  7. ,  7.1,  7.2,  7.3,  7.4,  7.5,  7.6,
+    #     7.7,  7.8,  7.9,  8. ,  8.1,  8.2,  8.3,  8.4,  8.5,  8.6,  8.7,
+    #     8.8,  8.9,  9. ,  9.1,  9.2,  9.3,  9.4,  9.5,  9.6,  9.7,  9.8,
+    #     9.9, 10. , 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9,
+    #     11. , 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9]
+    # conc = [0, 2.0872192862952943e-12, 3.1287579083105754e-06, 0.0010020258925158565, 0.019322359212570195, 0.11836208413558147, 0.4043632723391255, 0.9839664335757781, 1.9304988243840637, 3.2743464067235495, 5.008822532605883, 7.101332765726786, 9.504194775878483, 12.163068855780846, 15.022763303236609, 18.030854958983454, 21.139703900330808, 24.307374798996396, 27.49785777834186, 30.680867813689318, 33.831411255228815, 36.92924195182944, 39.95828347629913, 42.906063031658306, 45.76318237789182, 48.52283820778807, 51.18039640252658, 53.73301983123506, 56.17934668044553, 58.51921494458423, 60.75342817276259, 62.8835575214161, 64.91177539533, 66.84071633747325, 68.67336126786977, 70.41294162352307, 72.06286038644274, 73.62662738979137, 75.10780665614291, 76.50997384492484, 77.83668216937679, 79.09143538945568, 80.27766669948006, 81.39872251161005, 82.45785029213144, 83.4581897403678, 84.40276671299272, 85.29448939234607, 86.13614627852532, 86.93040565367201, 87.67981622486035, 88.38680870091893, 89.05369809975141, 89.68268661743711, 90.27586691959179, 90.8352257399996, 91.36264769211404, 91.85991921628207, 92.32873259999033, 92.77069002050591, 93.18730756936074, 93.5800192265204, 93.95018075905514, 94.29907352491485, 94.62790816719327, 94.93782818820954, 95.22991339597164, 95.5051832182337, 95.76459988150984, 96.0090714541462, 96.23945475394578, 96.45655812194741, 96.66114406482646, 96.8539317690552, 97.03559949046512, 97.20678682322448, 97.3680968525031, 97.52009819526583, 97.66332693373012, 97.79828844605882, 97.92545913884673, 98.04528808590801, 98.15819857779192, 98.26458958634996, 98.36483714855669, 98.45929567365262, 98.54829917753426, 98.63216244816775, 98.71118214565013, 98.78563784038846, 98.85579299271377, 98.92189587709498, 98.98418045396869, 99.04286719205521, 99.09816384388907, 99.15026617715549, 99.19935866429154, 99.24561513268314, 99.28919937766712, 99.33026574042975, 99.368959652782, 99.40541815068367, 99.43977035828794, 99.47213794417998, 99.50263555139136, 99.53137120268455, 99.55844668251865, 99.58395789702841, 99.60799521327446, 99.63064377895152, 99.65198382367451, 99.6720909428995, 99.6910363654761, 99.70888720577153, 99.72570670125343, 99.74155443636712, 99.75648655349629, 99.77055595175042, 99.78381247427993, 99.79630308477965]
 
-    c.fit_D(time, conc)
+    # c.fit_D(time, conc)
