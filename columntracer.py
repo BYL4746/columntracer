@@ -382,12 +382,10 @@ class ColumnTracer():
         return Cs[0]
 
     def _effluent_calculation(self,
-                              time_start,
-                              time_end,
-                              time_size,
+                              time,
                               D):
 
-        times = np.linspace(time_start, time_end, time_size)
+        times = time
 
         self.Pe = self._Pe_calculation(self.U, self.L, D)
         betas = self.eigenvalues()
@@ -436,7 +434,7 @@ class ColumnTracer():
               savefig = False,
               savefig_dpi = 200):
         
-        D = np.linspace(1, 200, 20)
+        D = np.linspace(1, 400, 40)
 
         time_start = time[0]
         time_end = time[-1]
@@ -444,7 +442,7 @@ class ColumnTracer():
 
         default_D_mse = {}
         for d_values in D:
-            Cs = self._effluent_calculation(time_start, time_end, time_size, d_values)
+            Cs = self._effluent_calculation(time, d_values)
             mse = self._MSE(Cs, conc)
             default_D_mse[d_values] = mse
 
@@ -458,7 +456,7 @@ class ColumnTracer():
         attempt = 0
         while attempt < max_attempts:
             current_D = (list(D_mse_dict)[0] + list(D_mse_dict)[1]) / 2 # Python 3.6 required
-            Cs = self._effluent_calculation(time_start, time_end, time_size, current_D)
+            Cs = self._effluent_calculation(time, current_D)
             mse = self._MSE(Cs, conc)
             D_mse_dict[current_D] = mse
             D_mse_dict = dict(sorted(D_mse_dict.items(), key = lambda d: d[1]))
@@ -484,22 +482,25 @@ class ColumnTracer():
                   dpi = None, 
                   savefig = False,
                   savefig_dpi = 200):
-        
-        Cs = self._effluent_calculation(time[0], time[-1], len(time), final_D)
+        time_curve = np.linspace(time[0], time[-1], 100)
+        Cs = self._effluent_calculation_whole(time[0], time[-1], 100, final_D)
         
         fig, ax = plt.subplots(figsize = figsize, dpi = dpi)
         ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
         ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
         ax.set_title('Raw data and fitted curve', size = 14, weight = 'bold')
         
-        if Cs[-1] >= conc[-1]:
-            y_lim = Cs[-1]
+        if self.C0 == 1:
+            plt.ylim(-0.03, 1)
         else:
-            y_lim = conc[-1]
-        plt.ylim(-1, y_lim + 1)
+            if Cs[-1] >= conc[-1]:
+                y_lim = Cs[-1]
+            else:
+                y_lim = conc[-1]
+            plt.ylim(-1, y_lim + 1)
         
         ax.scatter(time, conc, label = 'Raw data')
-        ax.plot(time, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
+        ax.plot(time_curve, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
         leg = ax.legend()
         plt.show()
         
@@ -512,7 +513,43 @@ class ColumnTracer():
             else:
                 plt.savefig(str(savefig), dpi = savefig_dpi)  
 
+    def _effluent_calculation_whole(self,
+                              time_start,
+                              time_end,
+                              time_size,
+                              D):
 
+        times = np.linspace(time_start, time_end, time_size)
+
+        self.Pe = self._Pe_calculation(self.U, self.L, D)
+        betas = self.eigenvalues()
+
+        # Store the results in a list
+        Cs = []
+        
+        # flags for concentrations that higher than C0 or lower than 0
+        C_high = 0
+        C_low = 0
+        
+        # Estimate the concentration for each dimensionless time at x = 1
+        for t in times:
+            tau = D * t / self.L**2
+            x = 1
+
+            # Get the eigenfunction values for all the eigenvalues
+            series = self._eigenfunction(self.Pe, np.array(betas), x, tau)
+
+            # Sum the series and convert the result to concentration at the point
+            C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
+            
+            if C > self.C0:
+                C = self.C0
+            elif C < 0:
+                C = 0
+                
+            Cs.append(C)
+
+        return Cs
 
 if __name__ == '__main__':
     '''Here are some examples to look at'''
@@ -556,16 +593,25 @@ if __name__ == '__main__':
     Example 7: fit data to breakthrough curve to find dispersion coefficient
     data.csv is available in \Lib\site-packages\columntracer
     '''
-    # import sys
     # import pandas as pd
+    # import sys
     
-    # python_path = sys.executable
-    # path = python_path.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
-
-    # c = ColumnTracer()  
+    # # example data file is available in \Lib\site-packages\columntracer
+    # # it's also available in the package repository: https://github.com/BYL4746/columntracer
+    # path = sys.executable.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
     # data = pd.read_csv(path + 'data.csv')
-    # time = data['time'].values.tolist()
-    # conc = data['concentration'].values.tolist()
     
-    # c.fit_D(time, conc, plot=True, dpi = 200)
-
+    # # convert pandas DataFrame to lists
+    # fit_t = data['time'].values.tolist()
+    # fit_c = data['concentration'].values.tolist()
+    
+    # c = ColumnTracer(C0 = 1,
+    #                  U = 35,
+    #                  L = 650,
+    #                  n = 1000)
+    
+    # c.fit_D(time = fit_t, 
+    #         conc = fit_c, 
+    #         max_attempts = 30,
+    #         plot = True)
+    
