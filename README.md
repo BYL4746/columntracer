@@ -6,6 +6,6 @@ Check examples.ipynb for examples of parameters and functions
 pip install columntracer
 
 
-## update
+## Upgrade
 pip install columntracer --upgrade
 
