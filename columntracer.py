@@ -3,7 +3,7 @@
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from scipy import optimize
-
+import time as timer
 
 class ColumnTracer():
     def __init__(self,
@@ -428,14 +428,20 @@ class ColumnTracer():
               time,
               conc,
               max_attempts = 20,
+              initial_guess = 100,
+              n_possible_D = 200,
               plot = False,
               figsize = None,
               dpi = None,
               savefig = False,
               savefig_dpi = 200):
         
-        D = np.linspace(1, 400, 40)
-
+        # D = np.linspace(1, 400, 40)
+        if type(n_possible_D) != int or n_possible_D <= 0:
+            print('n_possible_D must be a positive integer!')
+            return None
+        
+        D = np.linspace(initial_guess/10, initial_guess*10, n_possible_D)
         time_start = time[0]
         time_end = time[-1]
         time_size = len(time)
@@ -472,8 +478,84 @@ class ColumnTracer():
         if plot == True:
             self._fit_plot(time, conc, result_D, figsize, dpi, savefig, savefig_dpi)
             
-            
+    def new_fit_D(self,
+                  time,
+                  conc,
+                  max_attempts = 20,
+                  initial_guess = 100,
+                  algo = None,
+                  plot = False,
+                  figsize = None,
+                  dpi = None,
+                  savefig = False,
+                  savefig_dpi = 200):
         
+        self.time_fit = time
+        self.conc_fit = conc
+        
+        if algo == None:
+            fit_result = optimize.fmin(self.new_MSE, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_mse = fit_result[1]
+        elif algo == 'powell':
+            fit_result = optimize.fmin_powell(self.new_MSE, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_mse = fit_result[1]
+        elif algo == 'cg':
+            fit_result = optimize.fmin_cg(self.new_MSE, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_mse = fit_result[1]
+        elif algo == 'bfgs':
+            fit_result = optimize.fmin_bfgs(self.new_MSE, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_mse = fit_result[1]
+        elif algo == 'basin':
+            time_start = timer.time()
+            print('start!')
+            fit_result = optimize.basinhopping(self.new_MSE, x0 = initial_guess)
+            print(fit_result)
+            time_end = timer.time()
+            print(time_end-time_start)
+        elif algo == 'brute':
+            time_start = timer.time()
+            print('start!')
+            fit_result = optimize.brute(self.new_MSE, ((50,200),),Ns=50,full_output=1)
+            print(fit_result)
+            time_end = timer.time()
+            min_D = fit_result[0]
+            min_mse = fit_result[1]
+            print(time_end-time_start)
+        else:
+            print('\nWARNING: Unknown algorithm specified!\nUse default Nelder–Mead method instead.\n')
+            fit_result = optimize.fmin(self.new_MSE, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_mse = fit_result[1]
+            
+        print('\nDispersion coefficient is', min_D)
+        print('MSE is', min_mse)
+        
+        R = self.R_squared(self._effluent_calculation(self.time_fit, min_D), self.conc_fit)
+        print('\nR2 is:\n', R)
+        
+        if plot == True:
+            self._fit_plot(time, conc, min_D, figsize, dpi, savefig, savefig_dpi)
+            
+    def new_MSE(self,
+                D):
+        Cs = self._effluent_calculation(self.time_fit, D)
+        squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(Cs, self.conc_fit)]
+        mse = sum(squared_difference)
+        return mse
+        
+    def R_squared(self, Cs, C_fit):
+        Cs_mean = sum(Cs) / len(Cs)
+        C_fit_mean = sum(C_fit) / len(C_fit)
+        R2_1 = [(x_i - Cs_mean) * (y_i - C_fit_mean) for x_i, y_i in zip(Cs, C_fit)]
+        R2_2 = [(x_i - Cs_mean) ** 2 for x_i in Cs]
+        R2_3 = [(y_i - C_fit_mean) ** 2 for y_i in C_fit]
+        R2 = sum(R2_1) ** 2 / (sum(R2_2) * sum(R2_3))
+        return R2
+    
     def _fit_plot(self,
                   time,
                   conc,
@@ -593,25 +675,33 @@ if __name__ == '__main__':
     Example 7: fit data to breakthrough curve to find dispersion coefficient
     data.csv is available in \Lib\site-packages\columntracer
     '''
-    # import pandas as pd
-    # import sys
+    import pandas as pd
+    import sys
     
-    # # example data file is available in \Lib\site-packages\columntracer
-    # # it's also available in the package repository: https://github.com/BYL4746/columntracer
-    # path = sys.executable.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
-    # data = pd.read_csv(path + 'data.csv')
+    # example data file is available in \Lib\site-packages\columntracer
+    # it's also available in the package repository: https://github.com/BYL4746/columntracer
+    path = sys.executable.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
+    data = pd.read_csv(path + 'data.csv')
     
-    # # convert pandas DataFrame to lists
-    # fit_t = data['time'].values.tolist()
-    # fit_c = data['concentration'].values.tolist()
+    # convert pandas DataFrame to lists
+    fit_t = data['time'].values.tolist()
+    fit_c = data['concentration'].values.tolist()
     
-    # c = ColumnTracer(C0 = 1,
-    #                  U = 35,
-    #                  L = 650,
-    #                  n = 1000)
-    
-    # c.fit_D(time = fit_t, 
-    #         conc = fit_c, 
-    #         max_attempts = 30,
-    #         plot = True)
-    
+    c = ColumnTracer(C0 = 1,
+                      U = 34,
+                      L = 650,
+                      n = 1000)
+    ''' 
+    Dr. Lampert: 
+    algo is a keyword for available algorithms. Options are: 
+    None for default fmin using downhill simplex algorithm aka. Nelder–Mead method;
+    'powell' for fmin_powell using Powell’s method;
+    'cg' for fmin_cg using nonlinear conjugate gradient algorithm;
+    'bfgs' for fmin_bfgs using the BFGS algorithm.
+    Using values other than these above or leaving algo out will use the default algorithm. 
+    '''
+    c.new_fit_D(time = fit_t, 
+                conc = fit_c,
+                plot = True,
+                algo = 'powell',
+                initial_guess=170)
