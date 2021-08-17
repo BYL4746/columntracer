@@ -418,136 +418,140 @@ class ColumnTracer():
         return Cs
 
 
+    ######## OLD FUNCTION NOT IN USE ########
+    # def _MSE(self, x, y):
+    #     squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(x, y)]
+    #     mse = sum(squared_difference)
+    #     return mse
 
-    def _MSE(self, x, y):
-        squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(x, y)]
-        mse = sum(squared_difference)
-        return mse
+    # def fit_D(self,
+    #           time,
+    #           conc,
+    #           max_attempts = 20,
+    #           initial_guess = 100,
+    #           n_possible_D = 200,
+    #           plot = False,
+    #           figsize = None,
+    #           dpi = None,
+    #           savefig = False,
+    #           savefig_dpi = 200):
+        
+    #     # D = np.linspace(1, 400, 40)
+    #     if type(n_possible_D) != int or n_possible_D <= 0:
+    #         print('n_possible_D must be a positive integer!')
+    #         return None
+        
+    #     D = np.linspace(initial_guess/10, initial_guess*10, n_possible_D)
+    #     time_start = time[0]
+    #     time_end = time[-1]
+    #     time_size = len(time)
 
+    #     default_D_mse = {}
+    #     for d_values in D:
+    #         Cs = self._effluent_calculation(time, d_values)
+    #         mse = self._MSE(Cs, conc)
+    #         default_D_mse[d_values] = mse
+
+    #     default_D_mse = dict(sorted(default_D_mse.items(), key = lambda d: d[1]))
+    #     min_mse_D = list(default_D_mse)[0]
+    #     min_mse_2_D = list(default_D_mse)[1]
+    #     D_mse_dict = {min_mse_D: default_D_mse[min_mse_D],
+    #                   min_mse_2_D: default_D_mse[min_mse_2_D]}
+
+
+    #     attempt = 0
+    #     while attempt < max_attempts:
+    #         current_D = (list(D_mse_dict)[0] + list(D_mse_dict)[1]) / 2 # Python 3.6 required
+    #         Cs = self._effluent_calculation(time, current_D)
+    #         mse = self._MSE(Cs, conc)
+    #         D_mse_dict[current_D] = mse
+    #         D_mse_dict = dict(sorted(D_mse_dict.items(), key = lambda d: d[1]))
+    #         D_pop = list(D_mse_dict)[-1]
+    #         D_mse_dict.pop(D_pop)
+
+    #         attempt += 1
+
+    #     result_D = list(D_mse_dict)[0]
+    #     result_mse = D_mse_dict[result_D]
+    #     print('D is {D}\nMSE is {mse}'.format(D = result_D, mse = result_mse))
+        
+    #     if plot == True:
+    #         self._fit_plot(time, conc, result_D, figsize, dpi, savefig, savefig_dpi)
+    ######## OLD FUNCTION NOT IN USE ########
+        
     def fit_D(self,
               time,
               conc,
-              max_attempts = 20,
+              algorithm = None,
               initial_guess = 100,
-              n_possible_D = 200,
+              ranges = (),
               plot = False,
               figsize = None,
               dpi = None,
               savefig = False,
               savefig_dpi = 200):
         
-        # D = np.linspace(1, 400, 40)
-        if type(n_possible_D) != int or n_possible_D <= 0:
-            print('n_possible_D must be a positive integer!')
-            return None
-        
-        D = np.linspace(initial_guess/10, initial_guess*10, n_possible_D)
-        time_start = time[0]
-        time_end = time[-1]
-        time_size = len(time)
-
-        default_D_mse = {}
-        for d_values in D:
-            Cs = self._effluent_calculation(time, d_values)
-            mse = self._MSE(Cs, conc)
-            default_D_mse[d_values] = mse
-
-        default_D_mse = dict(sorted(default_D_mse.items(), key = lambda d: d[1]))
-        min_mse_D = list(default_D_mse)[0]
-        min_mse_2_D = list(default_D_mse)[1]
-        D_mse_dict = {min_mse_D: default_D_mse[min_mse_D],
-                      min_mse_2_D: default_D_mse[min_mse_2_D]}
-
-
-        attempt = 0
-        while attempt < max_attempts:
-            current_D = (list(D_mse_dict)[0] + list(D_mse_dict)[1]) / 2 # Python 3.6 required
-            Cs = self._effluent_calculation(time, current_D)
-            mse = self._MSE(Cs, conc)
-            D_mse_dict[current_D] = mse
-            D_mse_dict = dict(sorted(D_mse_dict.items(), key = lambda d: d[1]))
-            D_pop = list(D_mse_dict)[-1]
-            D_mse_dict.pop(D_pop)
-
-            attempt += 1
-
-        result_D = list(D_mse_dict)[0]
-        result_mse = D_mse_dict[result_D]
-        print('D is {D}\nMSE is {mse}'.format(D = result_D, mse = result_mse))
-        
-        if plot == True:
-            self._fit_plot(time, conc, result_D, figsize, dpi, savefig, savefig_dpi)
-            
-    def new_fit_D(self,
-                  time,
-                  conc,
-                  max_attempts = 20,
-                  initial_guess = 100,
-                  algo = None,
-                  plot = False,
-                  figsize = None,
-                  dpi = None,
-                  savefig = False,
-                  savefig_dpi = 200):
-        
         self.time_fit = time
         self.conc_fit = conc
         
-        if algo == None:
-            fit_result = optimize.fmin(self.new_MSE, x0 = initial_guess, full_output = True)
+        print('Start fitting...')
+        time_start = timer.time()
+        if algorithm == None:
+            fit_result = optimize.fmin(self._MSE, x0 = initial_guess, full_output = True)
             min_D = fit_result[0][0]
             min_mse = fit_result[1]
-        elif algo == 'powell':
-            fit_result = optimize.fmin_powell(self.new_MSE, x0 = initial_guess, full_output = True)
+        elif algorithm == 'powell':
+            fit_result = optimize.fmin_powell(self._MSE, x0 = initial_guess, full_output = True)
             min_D = fit_result[0][0]
             min_mse = fit_result[1]
-        elif algo == 'cg':
-            fit_result = optimize.fmin_cg(self.new_MSE, x0 = initial_guess, full_output = True)
+        elif algorithm == 'cg':
+            fit_result = optimize.fmin_cg(self._MSE, x0 = initial_guess, full_output = True)
             min_D = fit_result[0][0]
             min_mse = fit_result[1]
-        elif algo == 'bfgs':
-            fit_result = optimize.fmin_bfgs(self.new_MSE, x0 = initial_guess, full_output = True)
+        elif algorithm == 'bfgs':
+            fit_result = optimize.fmin_bfgs(self._MSE, x0 = initial_guess, full_output = True)
             min_D = fit_result[0][0]
             min_mse = fit_result[1]
-        elif algo == 'basin':
-            time_start = timer.time()
-            print('start!')
-            fit_result = optimize.basinhopping(self.new_MSE, x0 = initial_guess)
-            print(fit_result)
-            time_end = timer.time()
-            print(time_end-time_start)
-        elif algo == 'brute':
-            time_start = timer.time()
-            print('start!')
-            fit_result = optimize.brute(self.new_MSE, ((50,200),),Ns=50,full_output=1)
-            print(fit_result)
-            time_end = timer.time()
-            min_D = fit_result[0]
-            min_mse = fit_result[1]
-            print(time_end-time_start)
+        elif algorithm == 'basin':
+            fit_result = optimize.basinhopping(self._MSE, x0 = initial_guess)
+            # different result format
+            min_D = fit_result.x[0]
+            min_mse = fit_result.fun
+        elif algorithm == 'brute':
+            if ranges == ():
+                print('Please provide a range for dispersion coefficient!')
+            else:
+                r = (ranges,)
+                fit_result = optimize.brute(self._MSE, ranges = r, Ns=50,full_output=1)
+                min_D = fit_result[0][0]
+                min_mse = fit_result[1]
         else:
             print('\nWARNING: Unknown algorithm specified!\nUse default Nelder–Mead method instead.\n')
-            fit_result = optimize.fmin(self.new_MSE, x0 = initial_guess, full_output = True)
+            fit_result = optimize.fmin(self._MSE, x0 = initial_guess, full_output = True)
             min_D = fit_result[0][0]
             min_mse = fit_result[1]
             
-        print('\nDispersion coefficient is', min_D)
-        print('MSE is', min_mse)
+        time_end = timer.time()
+        print('\nFitting completed in {:.2f} seconds.'.format(time_end - time_start))
+        print('\nDispersion coefficient:', min_D)
+        print('\nMSE:', min_mse)
         
-        R = self.R_squared(self._effluent_calculation(self.time_fit, min_D), self.conc_fit)
-        print('\nR2 is:\n', R)
+        R = self._R_squared(self._effluent_calculation(self.time_fit, min_D), self.conc_fit)
+        print('\nR2:', R)
         
         if plot == True:
             self._fit_plot(time, conc, min_D, figsize, dpi, savefig, savefig_dpi)
+        
+        return min_D, min_mse, R
             
-    def new_MSE(self,
-                D):
+    def _MSE(self,
+             D):
         Cs = self._effluent_calculation(self.time_fit, D)
         squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(Cs, self.conc_fit)]
         mse = sum(squared_difference)
         return mse
         
-    def R_squared(self, Cs, C_fit):
+    def _R_squared(self, Cs, C_fit):
         Cs_mean = sum(Cs) / len(Cs)
         C_fit_mean = sum(C_fit) / len(C_fit)
         R2_1 = [(x_i - Cs_mean) * (y_i - C_fit_mean) for x_i, y_i in zip(Cs, C_fit)]
@@ -564,8 +568,8 @@ class ColumnTracer():
                   dpi = None, 
                   savefig = False,
                   savefig_dpi = 200):
-        time_curve = np.linspace(time[0], time[-1], 100)
-        Cs = self._effluent_calculation_whole(time[0], time[-1], 100, final_D)
+        time_curve = np.linspace(0, time[-1], 100)
+        Cs = self._effluent_calculation_whole(0, time[-1], 100, final_D)
         
         fig, ax = plt.subplots(figsize = figsize, dpi = dpi)
         ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
@@ -609,6 +613,114 @@ class ColumnTracer():
         # Store the results in a list
         Cs = []
         
+        # Estimate the concentration for each dimensionless time at x = 1
+        for t in times:
+            tau = D * t / self.L**2
+            x = 1
+
+            # Get the eigenfunction values for all the eigenvalues
+            series = self._eigenfunction(self.Pe, np.array(betas), x, tau)
+
+            # Sum the series and convert the result to concentration at the point
+            C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
+            
+            if C > self.C0:
+                C = self.C0
+            elif C < 0:
+                C = 0
+                
+            Cs.append(C)
+
+        return Cs
+    
+    def fit_D_U(self,
+                  time,
+                  conc,
+                  algorithm = None,
+                  initial_guess = [100,40],
+                  plot = False,
+                  figsize = None,
+                  dpi = None,
+                  savefig = False,
+                  savefig_dpi = 200):
+        
+        self.time_fit = time
+        self.conc_fit = conc
+        
+        print('Start fitting...')
+        time_start = timer.time()
+        if algorithm == None:
+            fit_result = optimize.fmin(self._MSE_U, x0 = initial_guess, full_output = True)
+            print(fit_result)
+            min_D = fit_result[0][0]
+            min_U = fit_result[0][1]
+            min_mse = fit_result[1]
+        elif algorithm == 'powell':
+            fit_result = optimize.fmin_powell(self._MSE_U, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_U = fit_result[0][1]
+            min_mse = fit_result[1]
+        elif algorithm == 'cg':
+            fit_result = optimize.fmin_cg(self._MSE_U, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_U = fit_result[0][1]
+            min_mse = fit_result[1]
+        elif algorithm == 'bfgs':
+            fit_result = optimize.fmin_bfgs(self._MSE_U, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_U = fit_result[0][1]
+            min_mse = fit_result[1]
+        elif algorithm == 'basin':
+            fit_result = optimize.basinhopping(self._MSE_U, x0 = initial_guess)
+            # different result format
+            min_D = fit_result.x[0]
+            min_U = fit_result.x[1]
+            min_mse = fit_result.fun
+
+        else:
+            print('\nWARNING: Unknown algorithm specified!\nUse default Nelder–Mead method instead.\n')
+            fit_result = optimize.fmin(self._MSE_U, x0 = initial_guess, full_output = True)
+            min_D = fit_result[0][0]
+            min_U = fit_result[0][1]
+            min_mse = fit_result[1]
+        
+        time_end = timer.time()
+        print('\nFitting completed in {:.2f} seconds.'.format(time_end - time_start))
+        
+        print('\nDispersion coefficient:', min_D)
+        print('\nFlow velocity:', min_U)
+        print('\nMSE is', min_mse)
+        
+        R = self._R_squared(self._effluent_calculation_U(self.time_fit, min_D, min_U), self.conc_fit)
+        print('\nR2 is:\n', R)
+        
+        if plot == True:
+            self._fit_plot_U(time, conc, min_D, min_U, figsize, dpi, savefig, savefig_dpi)
+        
+        return min_D, min_U, min_mse, R
+            
+    def _MSE_U(self,
+                params):
+        D, U = params
+        Cs = self._effluent_calculation_U(self.time_fit, D, U)
+        squared_difference = [(x_i - y_i) ** 2 for x_i, y_i in zip(Cs, self.conc_fit)]
+        mse = sum(squared_difference)
+        
+        return mse
+    
+    def _effluent_calculation_U(self,
+                              time,
+                              D,
+                              U):
+
+        times = time
+
+        self.Pe = self._Pe_calculation(U, self.L, D)
+        betas = self.eigenvalues()
+
+        # Store the results in a list
+        Cs = []
+        
         # flags for concentrations that higher than C0 or lower than 0
         C_high = 0
         C_low = 0
@@ -632,7 +744,90 @@ class ColumnTracer():
             Cs.append(C)
 
         return Cs
+    
+    def _fit_plot_U(self,
+                  time,
+                  conc,
+                  final_D,
+                  final_U,
+                  figsize = None, 
+                  dpi = None, 
+                  savefig = False,
+                  savefig_dpi = 200):
+        time_curve = np.linspace(0, time[-1], 100)
+        Cs = self._effluent_calculation_whole_U(0, time[-1], 100, final_D, final_U)
+        
+        # time_curve = np.linspace(time[0], time[-1], 100)
+        # Cs = self._effluent_calculation_whole_u(time[0], time[-1], 100, final_D, final_U)
+        
+        fig, ax = plt.subplots(figsize = figsize, dpi = dpi)
+        ax.set_xlabel('Time (hr)', size = 12, weight = 'bold')
+        ax.set_ylabel('Concentration (mg/L)', size = 12, weight = 'bold')
+        ax.set_title('Raw data and fitted curve', size = 14, weight = 'bold')
+        
+        if self.C0 == 1:
+            plt.ylim(-0.03, 1)
+        else:
+            if Cs[-1] >= conc[-1]:
+                y_lim = Cs[-1]
+            else:
+                y_lim = conc[-1]
+            plt.ylim(-1, y_lim + 1)
+        
+        ax.scatter(time, conc, label = 'Raw data')
+        ax.plot(time_curve, Cs, ls = '-', c = 'r', label = 'Breakthrough curve')
+        leg = ax.legend()
+        plt.show()
+        
+        if dpi != None:
+                savefig_dpi = dpi
+                
+        if savefig != False:
+            if savefig == True:
+                plt.savefig('raw_data_and_breakthrough_curve', dpi = savefig_dpi)
+            else:
+                plt.savefig(str(savefig), dpi = savefig_dpi)
+                
+    def _effluent_calculation_whole_U(self,
+                              time_start,
+                              time_end,
+                              time_size,
+                              D,
+                              U):
 
+        times = np.linspace(time_start, time_end, time_size)
+
+        self.Pe = self._Pe_calculation(U, self.L, D)
+        betas = self.eigenvalues()
+
+        # Store the results in a list
+        Cs = []
+        
+        # flags for concentrations that higher than C0 or lower than 0
+        C_high = 0
+        C_low = 0
+        
+        # Estimate the concentration for each dimensionless time at x = 1
+        for t in times:
+            tau = D * t / self.L**2
+            x = 1
+
+            # Get the eigenfunction values for all the eigenvalues
+            series = self._eigenfunction(self.Pe, np.array(betas), x, tau)
+
+            # Sum the series and convert the result to concentration at the point
+            C = self.C0 * (1 - 2 * self.Pe * np.exp(self.Pe/2 * x - self.Pe**2/4 * tau) * series.sum())
+            
+            if C > self.C0:
+                C = self.C0
+            elif C < 0:
+                C = 0
+                
+            Cs.append(C)
+
+        return Cs
+    
+    
 if __name__ == '__main__':
     '''Here are some examples to look at'''
     
@@ -692,16 +887,24 @@ if __name__ == '__main__':
                       L = 650,
                       n = 1000)
     ''' 
-    Dr. Lampert: 
-    algo is a keyword for available algorithms. Options are: 
+    Options for algorithm are: 
     None for default fmin using downhill simplex algorithm aka. Nelder–Mead method;
     'powell' for fmin_powell using Powell’s method;
     'cg' for fmin_cg using nonlinear conjugate gradient algorithm;
-    'bfgs' for fmin_bfgs using the BFGS algorithm.
+    'bfgs' for fmin_bfgs using the BFGS algorithm;
+    'basin' for basinhopping;
+    'brute' for brute, only available for single parameter fitting;
     Using values other than these above or leaving algo out will use the default algorithm. 
     '''
-    c.new_fit_D(time = fit_t, 
-                conc = fit_c,
-                plot = True,
-                algo = 'powell',
-                initial_guess=170)
+    c.fit_D(time = fit_t, 
+            conc = fit_c,
+            plot = True,
+            algorithm = 'powell',
+            initial_guess=170)
+    
+    # fit D and U together
+    # c.fit_D_U(time = fit_t, 
+    #           conc = fit_c,
+    #           plot = True,
+    #           algorithm = None,
+    #           initial_guess=[170,40])
