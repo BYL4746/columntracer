@@ -16,5 +16,6 @@ Binder for Column Advection-Dispersion Model.ipynb
 
 ## Cite
 You can cite this project using the following Digital Object Identifier:
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5236609.svg)](https://doi.org/10.5281/zenodo.5236609)
 
