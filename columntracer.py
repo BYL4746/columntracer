@@ -875,17 +875,17 @@ if __name__ == '__main__':
     
     # example data file is available in \Lib\site-packages\columntracer
     # it's also available in the package repository: https://github.com/BYL4746/columntracer
-    path = sys.executable.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
-    data = pd.read_csv(path + 'data.csv')
+    # path = sys.executable.split('python.exe')[0] + 'Lib\\site-packages\\columntracer\\'
+    # data = pd.read_csv(path + 'data.csv')
     
-    # convert pandas DataFrame to lists
-    fit_t = data['time'].values.tolist()
-    fit_c = data['concentration'].values.tolist()
+    # # convert pandas DataFrame to lists
+    # fit_t = data['time'].values.tolist()
+    # fit_c = data['concentration'].values.tolist()
     
-    c = ColumnTracer(C0 = 1,
-                      U = 34,
-                      L = 650,
-                      n = 1000)
+    # c = ColumnTracer(C0 = 1,
+    #                   U = 34,
+    #                   L = 650,
+    #                   n = 1000)
     ''' 
     Options for algorithm are: 
     None for default fmin using downhill simplex algorithm aka. Nelder–Mead method;
@@ -896,11 +896,11 @@ if __name__ == '__main__':
     'brute' for brute, only available for single parameter fitting;
     Using values other than these above or leaving algo out will use the default algorithm. 
     '''
-    c.fit_D(time = fit_t, 
-            conc = fit_c,
-            plot = True,
-            algorithm = 'powell',
-            initial_guess=170)
+    # c.fit_D(time = fit_t, 
+    #         conc = fit_c,
+    #         plot = True,
+    #         algorithm = 'powell',
+    #         initial_guess=170)
     
     # fit D and U together
     # c.fit_D_U(time = fit_t, 
@@ -908,3 +908,7 @@ if __name__ == '__main__':
     #           plot = True,
     #           algorithm = None,
     #           initial_guess=[170,40])
+    
+    
+    
+    
